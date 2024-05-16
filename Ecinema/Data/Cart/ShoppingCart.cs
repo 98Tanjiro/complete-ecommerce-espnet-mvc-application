@@ -18,7 +18,7 @@ namespace Ecinema.Data.Cart
             Context = context;
         }
 
-         public static ShoppingCart GetShoppingCart(IServiceProvider services)
+        public static ShoppingCart GetShoppingCart(IServiceProvider services)
         {
             ISession session = services.GetRequiredService<IHttpContextAccessor>()?.HttpContext.Session;
             var context = services.GetService<AppDbContext>();
@@ -32,7 +32,7 @@ namespace Ecinema.Data.Cart
             // If the user is authenticated, store the cart ID in session
             if (userId != null)
             {
-                session.SetString("CartId", cartId);
+            session.SetString("CartId", cartId);
             }
 
             return new ShoppingCart(context) { ShoppingCartId = cartId };
