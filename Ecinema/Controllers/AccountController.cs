@@ -6,7 +6,6 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
-
 namespace Ecinema.Controllers
 {
     public class AccountController : Controller
@@ -22,13 +21,11 @@ namespace Ecinema.Controllers
             _context = context;
         }
 
-
         public async Task<IActionResult> Users()
         {
             var users = await _context.Users.ToListAsync();
             return View(users);
         }
-
 
         public IActionResult Login() => View(new LoginVM());
 
@@ -48,6 +45,16 @@ namespace Ecinema.Controllers
                     {
                         return RedirectToAction("Index", "Movies");
                     }
+                    else if (result.IsLockedOut)
+                    {
+                        TempData["Error"] = "This account has been locked out, please try again later.";
+                        return View(loginVM);
+                    }
+                    else if (result.IsNotAllowed)
+                    {
+                        TempData["Error"] = "You are not allowed to login. Please contact support.";
+                        return View(loginVM);
+                    }
                 }
                 TempData["Error"] = "Wrong credentials. Please, try again!";
                 return View(loginVM);
@@ -56,7 +63,6 @@ namespace Ecinema.Controllers
             TempData["Error"] = "Wrong credentials. Please, try again!";
             return View(loginVM);
         }
-
 
         public IActionResult Register() => View(new RegisterVM());
 
@@ -76,15 +82,36 @@ namespace Ecinema.Controllers
             {
                 FullName = registerVM.FullName,
                 Email = registerVM.EmailAddress,
-                UserName = registerVM.EmailAddress
+                UserName = registerVM.EmailAddress,
+                EmailConfirmed = true
             };
 
             var newUserResponse = await _userManager.CreateAsync(newUser, registerVM.Password);
 
             if (newUserResponse.Succeeded)
-                await _userManager.AddToRoleAsync(newUser, UserRoles.User);
+            {
+                var roleResult = await _userManager.AddToRoleAsync(newUser, UserRoles.User);
+                if (!roleResult.Succeeded)
+                {
+                    foreach (var error in roleResult.Errors)
+                    {
+                        ModelState.AddModelError("", error.Description);
+                    }
+                    TempData["Error"] = "User created but failed to add to role";
+                    return View(registerVM);
+                }
 
-            return View("RegisterCompleted");
+                return View("RegisterCompleted");
+            }
+            else
+            {
+                foreach (var error in newUserResponse.Errors)
+                {
+                    ModelState.AddModelError("", error.Description);
+                }
+                TempData["Error"] = "User creation failed";
+                return View(registerVM);
+            }
         }
 
         [HttpPost]
@@ -98,6 +125,5 @@ namespace Ecinema.Controllers
         {
             return View();
         }
-
     }
 }

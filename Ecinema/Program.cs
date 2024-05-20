@@ -31,7 +31,10 @@ builder.Services.AddScoped<IMoviesService, MoviesService>();
 builder.Services.AddScoped<ICinemasService, CinemasService>();
 builder.Services.AddScoped<IOrdersService, OrdersService>();
 builder.Services.AddScoped<IProducersService, ProducersService>();
-builder.Services.AddScoped<ShoppingCart>();
+
+// Register ShoppingCart with a factory method
+builder.Services.AddScoped(sp => ShoppingCart.GetShoppingCart(sp));
+builder.Services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
 
 // Add other services
 builder.Services.AddMemoryCache();
@@ -51,16 +54,13 @@ app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseRouting();
 
+app.UseSession(); // Ensure session middleware is used before authentication
 app.UseAuthentication();
 app.UseAuthorization();
-
-app.UseSession(); // Session middleware should be used before authentication
 
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
-//seed database
-AppDbInitializer.Seed(app);
 
 // Seed database
 AppDbInitializer.Seed(app);

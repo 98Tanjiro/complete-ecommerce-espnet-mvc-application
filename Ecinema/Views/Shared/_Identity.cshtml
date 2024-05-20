@@ -18,7 +18,7 @@ else
     @*User profile section*@
     <div class="dropdown">
         <select class="form-control" id="profile-select" onchange="location = this.value;">
-            <option selected disabled>Hello @UserManager.GetUserName(User)</option>
+            <option selected disabled>Hello @UserManager.GetUserAsync(User).Result.FullName</option>
             <option value="@Url.Action("Index", "Orders")"><i class="bi bi-list"></i> Orders</option>
             @if (User.IsInRole("Admin"))
             {
