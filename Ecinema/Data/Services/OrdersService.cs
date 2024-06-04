@@ -1,50 +1,85 @@
 ﻿using Ecinema.Models;
 using Microsoft.EntityFrameworkCore;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace Ecinema.Data.Services
 {
     public class OrdersService : IOrdersService
     {
         private readonly AppDbContext _context;
-    public OrdersService(AppDbContext context)
-    {
-        _context = context;
-    }
 
-    public async Task<List<Order>> GetOrdersByUserIdAndRoleAsync(string userId, string userRole)
-    {
-        var orders = await _context.Orders.Include(n => n.OrderItems).ThenInclude(n => n.Movie).Include(n => n.User).ToListAsync();
-
-        if (userRole != "Admin")
+        public OrdersService(AppDbContext context)
         {
-            orders = orders.Where(n => n.UserId == userId).ToList();
+            _context = context;
         }
 
-        return orders;
-    }
-
-    public async Task StoreOrderAsync(List<ShoppingCartItem> items, string userId, string userEmailAddress)
-    {
-        var order = new Order()
+        public async Task<List<Order>> GetOrdersByUserIdAndRoleAsync(string userId, string userRole)
         {
-            UserId = userId,
-            Email = userEmailAddress
-        };
-        await _context.Orders.AddAsync(order);
-        await _context.SaveChangesAsync();
+            var orders = await _context.Orders
+                .Include(n => n.OrderItems)
+                .ThenInclude(n => n.Movie)
+                .Include(n => n.User)
+                .ToListAsync();
 
-        foreach (var item in items)
-        {
-            var orderItem = new OrderItem()
+            if (userRole != "Admin")
             {
-                Amount = item.Amount,
-                MovieId = item.Movie.Id,
-                OrderId = order.Id,
-                Price = item.Movie.Price
-            };
-            await _context.OrderItems.AddAsync(orderItem);
+                orders = orders.Where(n => n.UserId == userId).ToList();
+            }
+
+            return orders;
         }
-        await _context.SaveChangesAsync();
+
+        public async Task StoreOrderAsync(List<ShoppingCartItem> items, string userId, string userEmailAddress)
+        {
+            var order = new Order()
+            {
+                UserId = userId,
+                Email = userEmailAddress
+            };
+
+            await _context.Orders.AddAsync(order);
+            await _context.SaveChangesAsync();
+
+            foreach (var item in items)
+            {
+                var orderItem = new OrderItem()
+                {
+                    Amount = item.Amount,
+                    MovieId = item.Movie.Id,
+                    OrderId = order.Id,
+                    Price = item.Movie.Price
+                };
+                await _context.OrderItems.AddAsync(orderItem);
+            }
+
+            await _context.SaveChangesAsync();
+        }
+
+        public async Task CancelOrderAsync(int orderId)
+        {
+            var order = await _context.Orders.FindAsync(orderId);
+            if (order != null)
+            {
+                _context.Orders.Remove(order);
+                await _context.SaveChangesAsync();
+            }
+        }
+
+        public async Task<Order> GetOrderByIdAsync(int orderId)
+        {
+            return await _context.Orders
+                .Include(n => n.OrderItems)
+                .ThenInclude(n => n.Movie)
+                .Include(n => n.User)
+                .FirstOrDefaultAsync(n => n.Id == orderId);
+        }
+
+        public async Task EditOrderAsync(Order order)
+        {
+            _context.Entry(order).State = EntityState.Modified;
+            await _context.SaveChangesAsync();
+        }
     }
-}
 }

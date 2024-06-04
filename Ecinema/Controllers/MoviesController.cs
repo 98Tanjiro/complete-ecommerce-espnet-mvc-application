@@ -31,7 +31,7 @@ namespace Ecinema.Controllers
 
             if (!string.IsNullOrEmpty(searchString))
             {
-                //var filteredResult = allMovies.Where(n => n.Name.ToLower().Contains(searchString.ToLower()) || n.Description.ToLower().Contains(searchString.ToLower())).ToList();
+                var filteredResult = allMovies.Where(n => n.Name.ToLower().Contains(searchString.ToLower()));
 
                 var filteredResultNew = allMovies.Where(n => string.Equals(n.Name, searchString, StringComparison.CurrentCultureIgnoreCase));
 

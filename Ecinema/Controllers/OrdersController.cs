@@ -4,6 +4,7 @@ using Ecinema.Data.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
+using System.Threading.Tasks;
 
 namespace Ecinema.Controllers
 {
@@ -76,6 +77,22 @@ namespace Ecinema.Controllers
             await _shoppingCart.ClearShoppingCartAsync();
 
             return View("OrderCompleted");
+        }
+
+        public async Task<IActionResult> CancelOrder(int orderId)
+        {
+            await _ordersService.CancelOrderAsync(orderId);
+            return RedirectToAction(nameof(Index));
+        }
+
+        public async Task<IActionResult> EditOrder(int orderId)
+        {
+            var order = await _ordersService.GetOrderByIdAsync(orderId);
+            if (order == null)
+            {
+                return NotFound();
+            }
+            return View(order);
         }
     }
 }

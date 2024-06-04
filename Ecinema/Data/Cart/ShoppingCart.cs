@@ -7,29 +7,29 @@ namespace Ecinema.Data.Cart
 {
     public class ShoppingCart
     {
-        private readonly AppDbContext _context;
+        public AppDbContext Context { get; set; }
 
         public string ShoppingCartId { get; set; }
         public List<ShoppingCartItem> ShoppingCartItems { get; set; }
 
         public ShoppingCart(AppDbContext context)
         {
-            _context = context;
+            Context = context;
         }
 
         public static ShoppingCart GetShoppingCart(IServiceProvider services)
         {
-            var session = services.GetRequiredService<IHttpContextAccessor>()?.HttpContext.Session;
+            ISession session = services.GetRequiredService<IHttpContextAccessor>()?.HttpContext.Session;
             var context = services.GetService<AppDbContext>();
 
             // Get the current user's ID
-            var userId = services.GetRequiredService<IHttpContextAccessor>()?.HttpContext.User.FindFirstValue(ClaimTypes.NameIdentifier);
+            string userId = services.GetRequiredService<IHttpContextAccessor>()?.HttpContext.User.FindFirstValue(ClaimTypes.NameIdentifier);
 
             // Generate a unique cart ID if user is not authenticated
-            var cartId = userId ?? session.GetString("CartId") ?? Guid.NewGuid().ToString();
+            string cartId = userId ?? session.GetString("CartId") ?? Guid.NewGuid().ToString();
 
             // If the user is authenticated, store the cart ID in session
-            if (userId == null)
+            if (userId != null)
             {
                 session.SetString("CartId", cartId);
             }
@@ -39,7 +39,7 @@ namespace Ecinema.Data.Cart
 
         public void AddItemToCart(Movie movie)
         {
-            var shoppingCartItem = _context.ShoppingCartItems.FirstOrDefault(n => n.Movie.Id == movie.Id && n.ShoppingCartId == ShoppingCartId);
+            var shoppingCartItem = Context.ShoppingCartItems.FirstOrDefault(n => n.Movie.Id == movie.Id && n.ShoppingCartId == ShoppingCartId);
 
             if (shoppingCartItem == null)
             {
@@ -50,18 +50,18 @@ namespace Ecinema.Data.Cart
                     Amount = 1
                 };
 
-                _context.ShoppingCartItems.Add(shoppingCartItem);
+                Context.ShoppingCartItems.Add(shoppingCartItem);
             }
             else
             {
                 shoppingCartItem.Amount++;
             }
-            _context.SaveChanges();
+            Context.SaveChanges();
         }
 
         public void RemoveItemFromCart(Movie movie)
         {
-            var shoppingCartItem = _context.ShoppingCartItems.FirstOrDefault(n => n.Movie.Id == movie.Id && n.ShoppingCartId == ShoppingCartId);
+            var shoppingCartItem = Context.ShoppingCartItems.FirstOrDefault(n => n.Movie.Id == movie.Id && n.ShoppingCartId == ShoppingCartId);
 
             if (shoppingCartItem != null)
             {
@@ -71,24 +71,24 @@ namespace Ecinema.Data.Cart
                 }
                 else
                 {
-                    _context.ShoppingCartItems.Remove(shoppingCartItem);
+                    Context.ShoppingCartItems.Remove(shoppingCartItem);
                 }
             }
-            _context.SaveChanges();
+            Context.SaveChanges();
         }
 
         public List<ShoppingCartItem> GetShoppingCartItems()
         {
-            return ShoppingCartItems ??= _context.ShoppingCartItems.Where(n => n.ShoppingCartId == ShoppingCartId).Include(n => n.Movie).ToList();
+            return ShoppingCartItems ?? (ShoppingCartItems = Context.ShoppingCartItems.Where(n => n.ShoppingCartId == ShoppingCartId).Include(n => n.Movie).ToList());
         }
 
-        public double GetShoppingCartTotal() => _context.ShoppingCartItems.Where(n => n.ShoppingCartId == ShoppingCartId).Select(n => n.Movie.Price * n.Amount).Sum();
+        public double GetShoppingCartTotal() => Context.ShoppingCartItems.Where(n => n.ShoppingCartId == ShoppingCartId).Select(n => n.Movie.Price * n.Amount).Sum();
 
         public async Task ClearShoppingCartAsync()
         {
-            var items = await _context.ShoppingCartItems.Where(n => n.ShoppingCartId == ShoppingCartId).ToListAsync();
-            _context.ShoppingCartItems.RemoveRange(items);
-            await _context.SaveChangesAsync();
+            var items = await Context.ShoppingCartItems.Where(n => n.ShoppingCartId == ShoppingCartId).ToListAsync();
+            Context.ShoppingCartItems.RemoveRange(items);
+            await Context.SaveChangesAsync();
         }
     }
 }

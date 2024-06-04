@@ -6,6 +6,9 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Localization;
+using System.Globalization;
+using Microsoft.Extensions.Options;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -41,6 +44,15 @@ builder.Services.AddMemoryCache();
 builder.Services.AddSession(); // Session middleware added here
 builder.Services.AddControllersWithViews();
 
+// Localization configuration
+var supportedCultures = new[] { new CultureInfo("en-US"), new CultureInfo("ar-TN") };
+builder.Services.Configure<RequestLocalizationOptions>(options =>
+{
+    options.DefaultRequestCulture = new RequestCulture("ar-TN");
+    options.SupportedCultures = supportedCultures;
+    options.SupportedUICultures = supportedCultures;
+});
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline
@@ -57,6 +69,9 @@ app.UseRouting();
 app.UseSession(); // Ensure session middleware is used before authentication
 app.UseAuthentication();
 app.UseAuthorization();
+
+// Use localization settings
+app.UseRequestLocalization(app.Services.GetRequiredService<IOptions<RequestLocalizationOptions>>().Value);
 
 app.MapControllerRoute(
     name: "default",

@@ -2,6 +2,7 @@
 
 @{
     ViewData["Title"] = "All orders";
+    var tunisianCulture = new System.Globalization.CultureInfo("ar-TN");
 }
 
 <div class="row">
@@ -20,6 +21,7 @@
                     {
                         <th>User</th>
                     }
+                    <th>Actions</th> <!-- Add a header for actions -->
                 </tr>
             </thead>
             <tbody>
@@ -33,19 +35,23 @@
                                 {
                                     <li>
                                         <div class="alert alert-info" role="alert">
-                                            <span class="badge bg-success">@item.Amount</span> [@item.Price.ToString("c")] - @item.Movie.Name
+                                            <span class="badge bg-success">@item.Amount</span> [@item.Price.ToString("c", tunisianCulture)] - @item.Movie.Name
                                         </div>
                                     </li>
                                 }
                             </ul>
                         </td>
                         <td class="align-middle">
-                            @order.OrderItems.Select(m => m.Movie.Price * m.Amount).Sum().ToString("c")
+                            @order.OrderItems.Select(m => m.Movie.Price * m.Amount).Sum().ToString("c", tunisianCulture)
                         </td>
                         @if (User.Identity.IsAuthenticated && User.IsInRole("Admin"))
                         {
                             <td class="align-middle"> @order.User.FullName </td>
                         }
+                        <td class="align-middle">
+                            <a asp-action="EditOrder" asp-route-orderId="@order.Id" class="btn btn-primary">Edit</a>
+                            <a asp-action="CancelOrder" asp-route-orderId="@order.Id" class="btn btn-danger">Cancel</a>
+                        </td> <!-- Add buttons for edit and cancel actions -->
                     </tr>
                 }
             </tbody>
